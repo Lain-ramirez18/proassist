@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ProAssist</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0c0c0f; --surface: #15151a; --surface2: #1e1e26;
+      --border: rgba(255,255,255,0.07); --accent: #7c6af7; --accent2: #4fc4a0;
+      --text: #f0eff8; --muted: #7a798a;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .logo-text { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; }
+    .logo-text span { color: var(--accent); }
+    .badge { font-size: 11px; color: var(--accent2); background: rgba(79,196,160,0.1); border: 1px solid rgba(79,196,160,0.2); padding: 3px 10px; border-radius: 20px; }
+    #chat-window { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; scroll-behavior: smooth; }
+    #chat-window::-webkit-scrollbar { width: 4px; }
+    #chat-window::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .message { display: flex; gap: 10px; animation: fadeUp 0.25s ease forwards; max-width: 80%; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .message.bot { align-self: flex-start; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+    .message.user .avatar { background: rgba(124,106,247,0.15); border: 1px solid rgba(124,106,247,0.3); }
+    .message.bot .avatar { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+    .bubble { padding: 0.75rem 1rem; border-radius: 14px; font-size: 14px; line-height: 1.65; white-space: pre-wrap; }
+    .message.user .bubble { background: #1f1d35; border: 1px solid rgba(124,106,247,0.2); border-bottom-right-radius: 4px; }
+    .message.bot .bubble { background: #141420; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .typing .bubble { display: flex; align-items: center; gap: 4px; padding: 0.75rem 1rem; }
+    .dot { width: 7px; height: 7px; background: var(--muted); border-radius: 50%; animation: bounce 1.2s infinite ease-in-out; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,80%,100% { transform: scale(0.7); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+    .welcome { text-align: center; padding: 2rem 1rem; animation: fadeUp 0.4s ease forwards; }
+    .welcome h2 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 0.5rem; }
+    .welcome p { color: var(--muted); font-size: 14px; margin-bottom: 1.5rem; }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .suggestion-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 14px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
+    .suggestion-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .input-area { padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+    .input-row { display: flex; gap: 10px; align-items: flex-end; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 8px 8px 8px 14px; transition: border-color 0.2s; }
+    .input-row:focus-within { border-color: rgba(124,106,247,0.4); }
+    #user-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; resize: none; max-height: 120px; line-height: 1.5; padding: 4px 0; }
+    #user-input::placeholder { color: var(--muted); }
+    .controls { display: flex; gap: 6px; align-items: center; }
+    #reset-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    #reset-btn:hover { border-color: #e05f5f; color: #e05f5f; }
+    #send-btn { background: linear-gradient(135deg, var(--accent), #5a4fd4); border: none; color: white; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.1s; }
+    #send-btn:hover { opacity: 0.88; }
+    #send-btn:active { transform: scale(0.95); }
+    #send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    footer { text-align: center; font-size: 11px; color: var(--muted); padding: 6px 0 10px; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">Pro<span>Assist</span></div>
+  </div>
+  <span class="badge">IA activa</span>
+</header>
+<div id="chat-window">
+  <div class="welcome" id="welcome">
+    <h2>Hola, soy ProAssist 👋</h2>
+    <p>Tu asistente de productividad personal. ¿En qué te ayudo hoy?</p>
+    <div class="suggestions">
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">📋 Organizar mi día</button>
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">🎯 Definir mis metas</button>
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">⏱ Técnica Pomodoro</button>
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">💡 Dame motivación</button>
+    </div>
+  </div>
+</div>
+<div class="input-area">
+  <div class="input-row">
+    <textarea id="user-input" rows="1" placeholder="Escribe algo... / Type something..."></textarea>
+    <div class="controls">
+      <button id="reset-btn" title="Nueva conversación" onclick="resetChat()">↺</button>
+      <button id="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+  <footer>ProAssist · Powered by Gemini AI</footer>
+</div>
+<script>
+  const chatWindow = document.getElementById('chat-window');
+  const input = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
+  input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+  input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px'; });
+  function appendMessage(role, text) {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+    const msg = document.createElement('div');
+    msg.className = `message ${role}`;
+    msg.innerHTML = `<div class="avatar">${role === 'user' ? '👤' : '⚡'}</div><div class="bubble">${text}</div>`;
+    chatWindow.appendChild(msg);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+  function showTyping() {
+    const msg = document.createElement('div');
+    msg.className = 'message bot typing'; msg.id = 'typing';
+    msg.innerHTML = `<div class="avatar">⚡</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+    chatWindow.appendChild(msg);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+  function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = ''; input.style.height = 'auto';
+    sendBtn.disabled = true;
+    appendMessage('user', text);
+    showTyping();
+    try {
+      const res = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text }) });
+      const data = await res.json();
+      removeTyping();
+      appendMessage('bot', data.response || 'Error al procesar la respuesta.');
+    } catch { removeTyping(); appendMessage('bot', '❌ Error de conexión. Intenta de nuevo.'); }
+    sendBtn.disabled = false;
+    input.focus();
+  }
+  function sendSuggestion(btn) { input.value = btn.textContent.replace(/^[^\w]+/, '').trim(); sendMessage(); }
+  async function resetChat() {
+    await fetch('/reset', { method: 'POST' });
+    chatWindow.innerHTML = '';
+    const welcome = document.createElement('div');
+    welcome.className = 'welcome'; welcome.id = 'welcome';
+    welcome.innerHTML = `<h2>Hola, soy ProAssist 👋</h2><p>Tu asistente de productividad personal. ¿En qué te ayudo hoy?</p><div class="suggestions"><button class="suggestion-btn" onclick="sendSuggestion(this)">📋 Organizar mi día</button><button class="suggestion-btn" onclick="sendSuggestion(this)">🎯 Definir mis metas</button><button class="suggestion-btn" onclick="sendSuggestion(this)">⏱ Técnica Pomodoro</button><button class="suggestion-btn" onclick="sendSuggestion(this)">💡 Dame motivación</button></div>`;
+    chatWindow.appendChild(welcome);
+  }
+</script>
+</body>
+</html>
