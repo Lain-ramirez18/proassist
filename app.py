@@ -5,23 +5,12 @@ import google.generativeai as genai
 app = Flask(__name__)
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
-model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
-    system_instruction="""You are ProAssist, an intelligent and motivating personal productivity assistant.
-Your goal is to help the user:
-- Organize tasks and daily priorities
-- Create to-do lists and track progress
-- Generate ideas and solutions to everyday problems
-- Give productivity and wellness tips
-- Summarize information and help make decisions
+SYSTEM_PROMPT = """You are ProAssist, an intelligent and motivating personal productivity assistant.
+Your goal is to help the user organize tasks, set goals, apply productivity techniques, and stay motivated.
+LANGUAGE RULE: Always respond in the same language the user writes in.
+Use emojis in moderation. If the user shares a task, help them break it into concrete steps."""
 
-LANGUAGE RULE: Detect the language the user writes in and always respond in that same language.
-If they write in Spanish, respond in Spanish. If they write in English, respond in English.
-Use emojis in moderation to make responses friendlier.
-If the user shares a task, help them break it down into concrete steps."""
-)
-
-chat_session = model.start_chat(history=[])
+conversation_history = []
 
 @app.route("/")
 def index():
@@ -29,17 +18,29 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    global conversation_history
     data = request.get_json()
     user_message = data.get("message", "").strip()
     if not user_message:
         return jsonify({"error": "Mensaje vacío"}), 400
-    response = chat_session.send_message(user_message)
-    return jsonify({"response": response.text})
+
+    conversation_history.append({"role": "user", "parts": [user_message]})
+
+    model = genai.GenerativeModel(
+        model_name="gemini-2.0-flash",
+        system_instruction=SYSTEM_PROMPT
+    )
+    chat = model.start_chat(history=conversation_history[:-1])
+    response = chat.send_message(user_message)
+    assistant_message = response.text
+
+    conversation_history.append({"role": "model", "parts": [assistant_message]})
+    return jsonify({"response": assistant_message})
 
 @app.route("/reset", methods=["POST"])
 def reset():
-    global chat_session
-    chat_session = model.start_chat(history=[])
+    global conversation_history
+    conversation_history = []
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
