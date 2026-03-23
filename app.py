@@ -6,7 +6,7 @@ app = Flask(__name__)
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model_name="gemini-2.0-flash",
     system_instruction="""You are ProAssist, an intelligent and motivating personal productivity assistant.
 Your goal is to help the user:
 - Organize tasks and daily priorities
