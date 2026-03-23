@@ -27,7 +27,7 @@ def chat():
     conversation_history.append({"role": "user", "parts": [user_message]})
 
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash-latest",
+        model_name="gemini-pro",
         system_instruction=SYSTEM_PROMPT
     )
     chat = model.start_chat(history=conversation_history[:-1])
